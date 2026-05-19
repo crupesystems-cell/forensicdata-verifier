@@ -1,0 +1,59 @@
+# Copyright 2026 WBR IP & License Holding Pte. Ltd.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Continuous integration — runs on every push and pull request.
+# Verifies: code compiles, vet is clean, and the full test suite passes
+# on all three target operating systems (macOS, Linux, Windows).
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          check-latest: true
+
+      - name: Verify module hygiene
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build -o verifier .
+
+      - name: Test
+        run: go test -race -count=1 ./...
+
+      - name: Smoke — verify license
+        shell: bash
+        run: ./verifier verify license CKNF-LCFS15022-6FBF59ED
+
+      - name: Smoke — verify legal-pack (synthetic fixture)
+        shell: bash
+        run: |
+          go run testdata/gen/main.go
+          ./verifier verify legal-pack testdata/golden_legal_pack/valid-2026-05-19.zip --no-color

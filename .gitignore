@@ -1,0 +1,26 @@
+# Build output
+/verifier
+/verifier.exe
+/dist/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Test coverage
+*.out
+coverage.html
+
+# goreleaser local snapshot
+.goreleaser/
+
+# Local tooling / auto-indexer artifacts (not source)
+ruvector.db
+*.db

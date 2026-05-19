@@ -1,0 +1,6 @@
+# Synthetic legal-pack fixtures are generated on demand via
+# `go run ./testdata/gen` — see testdata/gen/main.go. They are NOT
+# committed because they contain pseudorandom QR PNG bytes that change
+# slightly each generation (image-encoder seed variance) and because
+# the canonical source-of-truth is the generator script.
+golden_legal_pack/

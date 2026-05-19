@@ -1,0 +1,76 @@
+# Copyright 2026 WBR IP & License Holding Pte. Ltd.
+# SPDX-License-Identifier: Apache-2.0
+#
+# goreleaser configuration for forensicdata-verifier.
+#
+# Local snapshot build (offline, no GitHub push):
+#   goreleaser build --snapshot --clean
+#
+# Local snapshot release (archives + checksums, no GitHub push):
+#   goreleaser release --snapshot --clean --skip=publish,sign
+#
+# Real release (Stage F, user-im-loop with GitHub-token):
+#   git tag v0.1.0 && git push --tags
+#   goreleaser release --clean
+#
+# v0.1.0 scope: 5 binary targets, archive tar.gz per target, sha256
+# checksums file. GPG signing deferred (no signing key bound to this
+# project yet — Plan §5/E.1 mentions checksums.txt.sig as v0.2.0).
+
+version: 2
+
+project_name: forensicdata-verifier
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: verifier
+    binary: verifier
+    main: ./
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      # windows/arm64 is rare in the forensic target audience; keep matrix
+      # to the 5 targets the plan calls for.
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: verifier-archive
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev"
+
+changelog:
+  disable: true # CHANGELOG.md is hand-maintained; goreleaser autogen is off
+
+release:
+  draft: true # Stage F: human reviews the draft before publishing
+  prerelease: auto
