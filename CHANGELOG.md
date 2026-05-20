@@ -98,6 +98,15 @@ Python and Go reach. This is a property of the implementations as
 written, not an external certification — independent re-verification
 against the spec is encouraged.
 
+### Fixed
+
+- `verifier version` now reports the goreleaser-injected version string
+  (e.g. `v0.2.0`) instead of the hardcoded `v0.0.0-dev` default. The
+  `main.Version` identifier was renamed to lowercase `main.version` to
+  match the `-X main.version=…` ldflag declared in `.goreleaser.yaml`.
+  Pre-existing v0.1.0 binary built via goreleaser is affected by the
+  same silent miss; this fix lands in v0.2.0.
+
 ### Test count
 
 Approximately 280 tests passing across 5 packages (around 170 new vs

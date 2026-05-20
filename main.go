@@ -15,9 +15,10 @@ import (
 	"github.com/crupesystems-cell/forensicdata-verifier/cmd"
 )
 
-// Version is overridden at build time via -ldflags "-X main.Version=v0.1.0".
-// Default reflects pre-release development state.
-var Version = "v0.0.0-dev"
+// version is overridden at build time via -ldflags "-X main.version=v0.2.0".
+// The identifier is lowercase to match the goreleaser ldflags injection
+// declared in .goreleaser.yaml. Default reflects local-dev builds.
+var version = "v0.0.0-dev"
 
 func main() {
 	root := &cobra.Command{
@@ -55,7 +56,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print verifier version",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Println(Version)
+			fmt.Println(version)
 		},
 	}
 }
