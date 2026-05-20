@@ -7,8 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet. Stage E.1.f (audit-chain + RFC 3161 TSR-digest verification)
-will land here.
+Nothing yet.
+
+## [0.2.1] — 2026-05-22
+
+### Added — Stage E.1.f: audit-chain + RFC 3161 TSR-digest verification
+
+Completes the two Bundle-Spec v1.0 §12.1 mandatory checks that were
+deferred in v0.2.0:
+
+- §12.1 check  9 — `audit/events.jsonl` hash-chain unbroken
+  → `AUDIT_CHAIN_BROKEN` (Exit 25) on first broken link, with
+  diagnostic that names the offending event_id and 8-hex excerpts of
+  expected vs got hashes.
+- §12.1 check 10 — `manifest.tsr` RFC 3161 structural validation
+  → `TIMESTAMP_INVALID` (Exit 26) on parse failure or imprint mismatch.
+  Checks `hashAlgorithm == SHA-256` and `hashedMessage` matches the
+  SHA-256 of the canonical manifest.
+
+New files:
+
+- `internal/bundle/audit.go` — byte-exact Go mirror of the Python
+  reference (`forensicdata_audit/chain.py`). Canonical-JSON + SHA-256
+  chain validator; preserves additive future fields by hashing the
+  full parsed event map rather than a fixed struct.
+- `internal/bundle/tsr.go` — RFC 3161 structural validator built on
+  the existing `internal/tsa/` package (digitorus/timestamp library).
+  Pure imprint comparison is factored out (`verifyTSRImprint`) so it
+  is unit-testable without constructing a real TSR token.
+- `internal/bundle/audit_test.go` (16 tests) and
+  `internal/bundle/tsr_test.go` (7 tests).
+
+Behaviour changes:
+
+- A bundle that previously reported `VALID, 8 checks PASS, 2 SKIPPED`
+  now reports `VALID, 10 checks PASS` — the two §12.1 checks are no
+  longer deferred. Bundles without `audit/events.jsonl` or
+  `manifest.tsr` still PASS the corresponding checks with
+  informational detail (absence is a presence-layer concern, handled
+  by the existing required-entry list, not chain validity).
+
+Out of scope (deferred, honestly):
+
+- RFC 3161 cryptographic signature verification against a bundled
+  TSA-CA trust root (Bundle-Spec §12.2 OPTIONAL). Requires curating
+  a trust-root set; not blocking forensic claims because structural
+  validation already detects TSR substitution and content tampering.
+- `TIMESTAMP_MISSING` (Exit 30) warning when a TSR is expected for a
+  given package class. Per-class policy is a higher-level concern;
+  revisit when bundle producers start writing the relevant manifest
+  field.
+
+### Internal
+
+- `go test ./...` — all green; 23 new bundle tests.
+- `go vet ./...` clean.
 
 ## [0.2.0] — 2026-05-22
 

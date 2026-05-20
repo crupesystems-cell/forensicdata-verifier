@@ -21,7 +21,7 @@ package bundle
 //	§12.1 check 12  .sig.public_key_pem == meta/signing_key   (folded into signature_valid)
 //	§12.1 check 13  no internal_only in disclosure/sanitized  POLICY_VIOLATION
 //
-// Deferred to Stage E.1.f (audit + TSR layer):
+// Added in Stage E.1.f (Verifier v0.2.1):
 //
 //	§12.1 check  9  audit/events.jsonl chain unbroken         AUDIT_CHAIN_BROKEN
 //	§12.1 check 10  manifest.tsr RFC 3161 structural          TIMESTAMP_INVALID
@@ -208,13 +208,21 @@ func VerifyBundle(bundlePath string, _ VerifyOptions) (*Verdict, error) {
 		return v, nil
 	}
 
-	// §12.1 checks 9 + 10 — deferred to Stage E.1.f.
-	v.Checks = append(v.Checks, CheckResult{
-		Name:    checkAuditChain,
-		Result:  resultSkip,
-		Skipped: "audit chain verification deferred to Stage E.1.f",
-	})
-	v.Checks = append(v.Checks, timestampSkippedFor(r))
+	// §12.1 check 9 — audit/events.jsonl hash-chain unbroken.
+	auditChain := auditChainCheck(r)
+	v.Checks = append(v.Checks, auditChain)
+	if auditChain.Result == resultFail {
+		v.finalize(CodeAuditChainBroken)
+		return v, nil
+	}
+
+	// §12.1 check 10 — manifest.tsr RFC 3161 structural validation.
+	tsCheck := timestampCheck(r, manifest)
+	v.Checks = append(v.Checks, tsCheck)
+	if tsCheck.Result == resultFail {
+		v.finalize(CodeTimestampInvalid)
+		return v, nil
+	}
 
 	// §12.1 check 13.
 	policy := checkPolicyState(manifest)
@@ -501,21 +509,6 @@ func checkPolicyState(m *Manifest) CheckResult {
 		Name:   checkPolicyCompliance,
 		Result: resultPass,
 		Detail: fmt.Sprintf("no internal_only artifacts in %s package", m.PackageClass),
-	}
-}
-
-func timestampSkippedFor(r *Reader) CheckResult {
-	if r.HasEntry(EntryManifestTSR) {
-		return CheckResult{
-			Name:    checkTimestamp,
-			Result:  resultSkip,
-			Skipped: "manifest.tsr present; RFC 3161 verification deferred to Stage E.1.f",
-		}
-	}
-	return CheckResult{
-		Name:    checkTimestamp,
-		Result:  resultSkip,
-		Skipped: "no manifest.tsr in bundle (timestamp absent)",
 	}
 }
 
