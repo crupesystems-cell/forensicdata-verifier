@@ -31,8 +31,10 @@ suite software installation required.
 
 A single static binary, offline, no account, no telemetry.
 
-Verification scope (v0.1.0):
+Verification scope (v0.2.0):
   verify legal-pack <path.zip>   Full CKNF Legal-Pack integrity check
+  verify bundle <path.zip>       Evidence Bundle (Bundle-Spec v1.0)
+                                 manifest + Ed25519 signature + artifact hashes
   verify license <string>        License format + checksum (NOT authenticity)
   inspect <path>                 Schema-only output, no verification
 

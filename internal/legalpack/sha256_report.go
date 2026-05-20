@@ -20,7 +20,7 @@ import (
 //   - ChainPrev = "(genesis)"   → ChainPrev="", ChainPrevIsGenesis=true
 //   - IdentityFingerprint = "(none)" → ""  + IdentityFingerprintIsNone=true
 //   - ChainHash = "(unset)"     → ChainHash="" (no companion flag; callers
-//                                 must check the empty string explicitly)
+//     must check the empty string explicitly)
 type Sha256Report struct {
 	RecordingID               string
 	AudioFilename             string

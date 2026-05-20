@@ -17,7 +17,7 @@
 //
 //  1. By default it escapes < > & — disabled via Encoder.SetEscapeHTML(false).
 //  2. It always escapes U+2028 and U+2029 (line/paragraph separators) as
-//       /  . Python's ensure_ascii=False does NOT escape these.
+//     /  . Python's ensure_ascii=False does NOT escape these.
 //
 // This package emits output that matches Python byte-for-byte for the field
 // types CKNF actually uses (hex strings, ISO-8601 timestamps, integers,

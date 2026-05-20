@@ -69,5 +69,6 @@ func VerifyCmd() *cobra.Command {
 	}
 	cmd.AddCommand(VerifyLicenseCmd())
 	cmd.AddCommand(VerifyLegalPackCmd())
+	cmd.AddCommand(VerifyBundleCmd())
 	return cmd
 }

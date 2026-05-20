@@ -20,6 +20,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/crupesystems-cell/forensicdata-verifier/internal/bundle"
 	"github.com/crupesystems-cell/forensicdata-verifier/internal/legalpack"
 )
 
@@ -140,4 +141,102 @@ func signedStr(signed bool) string {
 		return "is hash-chained"
 	}
 	return "unsigned (CKNF v2.3 schema)"
+}
+
+// ─── Bundle rendering (Bundle-Spec v1.0 §12.3) ─────────────────────────────
+
+// HumanBundle renders a bundle Verdict as a multi-line operator-friendly
+// report. If useColor is false, color escapes are omitted.
+func HumanBundle(w io.Writer, v *bundle.Verdict, useColor bool) error {
+	if v == nil {
+		return fmt.Errorf("report: nil bundle verdict")
+	}
+	var b strings.Builder
+
+	b.WriteString(colored(useColor, ansiGrey, "Format:    "))
+	b.WriteString(v.Format)
+	b.WriteString("\n")
+	if v.BundleID != "" {
+		b.WriteString(colored(useColor, ansiGrey, "Bundle:    "))
+		b.WriteString(v.BundleID)
+		b.WriteString("\n")
+	}
+	if v.Product != "" {
+		b.WriteString(colored(useColor, ansiGrey, "Product:   "))
+		b.WriteString(v.Product)
+		if v.PackageClass != "" {
+			b.WriteString(" / ")
+			b.WriteString(v.PackageClass)
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(colored(useColor, ansiGrey, "Artifacts: "))
+	fmt.Fprintf(&b, "%d\n\n", v.ArtifactCount)
+
+	for _, c := range v.Checks {
+		writeBundleCheck(&b, c, useColor)
+	}
+
+	b.WriteString("\n")
+	switch v.OverallResult {
+	case "PASS":
+		b.WriteString(colored(useColor, ansiGreen,
+			fmt.Sprintf("VERDICT: PASS  [%s]", v.ResultCode)))
+	default:
+		b.WriteString(colored(useColor, ansiRed,
+			fmt.Sprintf("VERDICT: FAIL  [%s]", v.ResultCode)))
+	}
+	b.WriteString("\n")
+	b.WriteString(v.Summary)
+	b.WriteString("\n")
+
+	_, err := w.Write([]byte(b.String()))
+	return err
+}
+
+// JSONBundle renders a bundle Verdict as a single JSON object with a
+// trailing newline. Snapshot-stable: bundle.Verdict's field tags fix the
+// key order.
+func JSONBundle(w io.Writer, v *bundle.Verdict) error {
+	if v == nil {
+		return fmt.Errorf("report: nil bundle verdict")
+	}
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	return enc.Encode(v)
+}
+
+func writeBundleCheck(b *strings.Builder, c bundle.CheckResult, useColor bool) {
+	var symbol, color string
+	switch c.Result {
+	case "PASS":
+		symbol = "✓"
+		color = ansiGreen
+	case "FAIL":
+		symbol = "✗"
+		color = ansiRed
+	case "SKIPPED":
+		symbol = "○"
+		color = ansiYellow
+	default:
+		symbol = "?"
+		color = ansiGrey
+	}
+	b.WriteString(colored(useColor, color, fmt.Sprintf("%s %-24s ", symbol, c.Name)))
+	switch c.Result {
+	case "PASS":
+		b.WriteString(c.Detail)
+	case "FAIL":
+		lines := strings.Split(c.Error, "\n")
+		for i, ln := range lines {
+			if i > 0 {
+				b.WriteString("\n                           ")
+			}
+			b.WriteString(ln)
+		}
+	case "SKIPPED":
+		b.WriteString(c.Skipped)
+	}
+	b.WriteString("\n")
 }
